@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>과학과 인류의 지속가능한 삶 - 인터랙티브 학습지</title>
+    <style>
+        /* === A. 배경 및 분위기 (Design System) === */
+        :root {
+            --bg-color: #F0F5F4; /* Mint Cream / Soft Gray */
+            --primary-teal: #4A7C73; /* Muted Teal */
+            --sub-teal: #7FAAA1; /* Soft Sage */
+            --text-color: #2C3E3A; /* Charcoal Teal */
+            --accent-red: #FF6B6B; /* Warning / Energy */
+            --accent-green: #95E06C; /* Success / Result */
+            
+            --glass-bg: rgba(255, 255, 255, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.6);
+            --glass-shadow: 0 8px 32px 0 rgba(44, 62, 58, 0.1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+        }
+
+        /* 텍스트 반응형 (clamp) */
+        h1 { font-size: clamp(2.5rem, 5vw, 4.5rem); font-weight: 800; line-height: 1.2; margin-bottom: 1rem; color: var(--primary-teal); }
+        h2 { font-size: clamp(1.8rem, 3.5vw, 3rem); font-weight: 700; margin-bottom: 1.5rem; color: var(--primary-teal); }
+        p { font-size: clamp(1rem, 2vw, 1.5rem); line-height: 1.6; margin-bottom: 1rem; }
+        .highlight { color: var(--primary-teal); font-weight: bold; }
+        .energy { color: var(--accent-red); font-weight: bold; }
+
+        /* === 레이아웃 및 슬라이드 === */
+        .slides-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            padding: 4% 15% 4% 8%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateX(50px);
+        }
+
+        .slide.active {
+            opacity: 1;
+            pointer-events: all;
+            transform: translateX(0);
+        }
+
+        .slide.prev-slide {
+            transform: translateX(-50px);
+        }
+
+        /* === C. 공통 내비게이션 (Glassmorphism) === */
+        .nav-bar {
+            position: fixed;
+            right: 2%; top: 50%;
+            transform: translateY(-50%);
+            width: 80px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 40px;
+            box-shadow: var(--glass-shadow);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            background: none; border: none; cursor: pointer;
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-btn:hover { background: rgba(74, 124, 115, 0.1); }
+        .nav-btn svg { width: 24px; height: 24px; fill: var(--primary-teal); }
+        .nav-btn:disabled svg { fill: #ccc; }
+        .nav-btn:disabled { cursor: not-allowed; background: none; }
+
+        .indicator {
+            margin: 20px 0; font-size: 1.1rem; font-weight: bold;
+            color: var(--primary-teal);
+        }
+
+        /* === 커스텀 UI 및 인터랙션 요소 === */
+        .card {
+            background: #fff; border-radius: 20px; padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            margin-bottom: 1rem; border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .interactive-btn {
+            background: var(--primary-teal); color: white;
+            border: none; padding: 15px 30px; border-radius: 30px;
+            font-size: 1.2rem; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(74, 124, 115, 0.3);
+            transition: all 0.2s;
+        }
+        .interactive-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(74, 124, 115, 0.4); }
+        .interactive-btn.danger { background: var(--accent-red); box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3); }
+
+        /* Slide 3: 과학적 탐구 순환 */
+        .step-container { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 2rem; }
+        .step-box {
+            flex: 1 1 30%; background: #fff; padding: 1.5rem; border-radius: 15px;
+            text-align: center; font-weight: bold; border-top: 5px solid var(--sub-teal);
+            opacity: 0; transform: translateY(20px); transition: all 0.5s ease;
+        }
+        .step-box.visible { opacity: 1; transform: translateY(0); }
+        .step-box.active-step { border-color: var(--primary-teal); transform: scale(1.05); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+
+        /* 입자 공통 시각화 */
+        .particle-box {
+            width: 100%; max-width: 400px; height: 300px; 
+            border: 3px solid var(--sub-teal); border-radius: 20px; 
+            position: relative; background: #fff; overflow: hidden;
+        }
+        .particle {
+            position: absolute; width: 20px; height: 20px; border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #aee3d9, var(--primary-teal));
+        }
+        .particle.hot { background: radial-gradient(circle at 30% 30%, #ff9e9e, var(--accent-red)); }
+        
+        /* Slide 5: 열평형 */
+        .equilibrium-container { display: flex; gap: 20px; align-items: center; justify-content: center; height: 350px; }
+        .eq-box { width: 250px; height: 250px; border-radius: 20px; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 5px; transition: all 1s ease; position: relative;}
+        .eq-box.hot-box { background: rgba(255, 107, 107, 0.2); }
+        .eq-box.cold-box { background: rgba(74, 124, 115, 0.2); }
+        .eq-particle { width: 15px; height: 15px; border-radius: 50%; transition: background 2s ease; }
+        .eq-box.hot-box .eq-particle { background: var(--accent-red); animation: vibrate 0.1s infinite; }
+        .eq-box.cold-box .eq-particle { background: var(--primary-teal); animation: vibrate 0.5s infinite; }
+        
+        .merged .eq-box { transform: translateX(10px); }
+        .merged .hot-box { transform: translateX(12px); border-radius: 20px 0 0 20px; }
+        .merged .cold-box { transform: translateX(-12px); border-radius: 0 20px 20px 0; }
+        .merged .eq-particle { background: #9b72c9 !important; animation: vibrate 0.3s infinite !important; }
+
+        @keyframes vibrate {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(1px, -1px); }
+            50% { transform: translate(-1px, 1px); }
+            75% { transform: translate(1px, 1px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        /* Slide 7: 비열과 열팽창 수정 구간 */
+        .thermo-container { display: flex; gap: 40px; justify-content: center; margin-top: 2rem; }
+        .thermometer { width: 40px; height: 200px; background: #e0e0e0; border-radius: 20px; position: relative; overflow: hidden; border: 3px solid #ccc; }
+        .mercury { position: absolute; bottom: 0; width: 100%; height: 20%; background: var(--accent-red); transition: height 2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .material-box { width: 150px; height: 150px; border-radius: 10px; display: flex; align-items: center; justify-content: center; transition: all 2s; margin-top: 10px;}
+        .water-box { background: var(--sub-teal); color: white; }
+        .metal-box { background: #888; color: white; }
+        
+        /* 선택자 구조 개선으로 가열 애니메이션 정상 연동 */
+        .heating .thermometer-wrap:first-child .mercury { height: 40%; }
+        .heating .thermometer-wrap:last-child .mercury { height: 90%; }
+        .heating .metal-box { transform: scale(1.15); background: var(--accent-red); }
+
+        /* Slide 9: 상태 (고, 액, 기) 입자 영역 스타일 */
+        .state-grid { display: flex; gap: 20px; justify-content: space-around; margin-top: 2rem; }
+        .state-card { text-align: center; flex: 1; }
+        .state-visual { height: 200px; background: #fff; border-radius: 20px; border: 2px solid var(--sub-teal); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        
+        /* 그래프 컨테이너 */
+        .chart-box { width: 100%; max-width: 800px; height: 400px; background: #fff; border-radius: 20px; padding: 2rem; border: 2px solid var(--sub-teal); position: relative; margin-top: 1rem;}
+        .curve-line { fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+        .heat-curve { stroke: var(--accent-red); }
+        .cool-curve { stroke: var(--primary-teal); }
+        .plateau-text { font-size: 1.2rem; font-weight: bold; fill: var(--text-color); }
+
+    </style>
+</head>
+<body>
+
+    <div class="slides-container" id="slides-container">
+        
+        <div class="slide active">
+            <div class="card" style="background: transparent; box-shadow: none; border: none; text-align: center;">
+                <p style="color: var(--sub-teal); font-weight: bold; font-size: 1.5rem;">1단원, 3단원, 4단원 요약 학습지</p>
+                <h1 style="font-size: clamp(3rem, 6vw, 5.5rem); margin-top: 1rem;">과학과 인류의<br>지속가능한 삶</h1>
+                <p style="margin-top: 2rem; color: var(--text-color); opacity: 0.8;">우리가 보는 거시적 현상 뒤에 숨겨진 입자와 열의 역동적인 세계</p>
+            </div>
+        </div>
+
+        <div class="slide">
+            <h2>과학적 탐구의 시작, <span class="highlight">가설</span></h2>
+            <div class="card" style="margin-top: 3rem; text-align: center; padding: 4rem 2rem;">
+                <h1 style="color: var(--text-color); font-size: clamp(2rem, 3vw, 2.5rem);">
+                    "어떤 현상에 대한 <span class="highlight">가상의 설명</span>으로<br>
+                    참이라고 검증될 경우 새로운 과학적 이론이 될 수 있습니다"
+                </h1>
+            </div>
+        </div>
+
+        <div class="slide" data-steps="5">
+            <h2>세상을 향한 질문, <span class="highlight">과학적 탐구의 순환</span></h2>
+            <p>오른쪽 화살표(또는 다음 버튼)를 눌러 탐구의 단계를 확인해보세요.</p>
+            <div class="step-container">
+                <div class="step-box" id="step-1">
+                    <div style="font-size: 2rem; color: var(--primary-teal); margin-bottom: 10px;">1</div>
+                    문제 인식
+                </div>
+                <div class="step-box" id="step-2">
+                    <div style="font-size: 2rem; color: var(--primary-teal); margin-bottom: 10px;">2</div>
+                    가설 설정
+                </div>
+                <div class="step-box" id="step-3">
+                    <div style="font-size: 2rem; color: var(--primary-teal); margin-bottom: 10px;">3</div>
+                    탐구 설계 및 수행
+                </div>
+                <div class="step-box" id="step-4">
+                    <div style="font-size: 2rem; color: var(--primary-teal); margin-bottom: 10px;">4</div>
+                    자료 분석
+                </div>
+                <div class="step-box" id="step-5">
+                    <div style="font-size: 2rem; color: var(--primary-teal); margin-bottom: 10px;">5</div>
+                    결론 도출
+                </div>
+            </div>
+        </div>
+
+        <div class="slide">
+            <h2>온도란 단순한 숫자가 아니라<br><span class="energy">입자들이 얼마나 활발한지</span> 보여줍니다.</h2>
+            <div style="display: flex; gap: 40px; margin-top: 2rem;">
+                <div style="flex:1; text-align: center;">
+                    <div class="particle-box" id="cold-particles"></div>
+                    <p style="margin-top: 1rem; font-weight: bold;">낮은 온도 (둔한 움직임)</p>
+                </div>
+                <div style="flex:1; text-align: center;">
+                    <div class="particle-box" id="hot-particles"></div>
+                    <p style="margin-top: 1rem; font-weight: bold; color: var(--accent-red);">높은 온도 (활발한 움직임)</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="slide">
+            <h2>에너지가 흐르고 균형을 맞추는 과정, <span class="highlight">열평형</span></h2>
+            <p>고온 물체와 저온 물체가 접속하면 점차 열평형이 이뤄져 온도가 같아집니다.</p>
+            <div class="card equilibrium-container" id="eq-container">
+                <div class="eq-box hot-box" id="eq-hot"></div>
+                <div class="eq-box cold-box" id="eq-cold"></div>
+            </div>
+            <div style="text-align: center; margin-top: 1rem;">
+                <button class="interactive-btn danger" onclick="triggerEquilibrium()">접촉 및 열 이동 시작</button>
+            </div>
+        </div>
+
+        <div class="slide">
+            <h2>열이 세상을 여행하는 <span class="highlight">세 가지 방법</span></h2>
+            <div class="state-grid">
+                <div class="card state-card">
+                    <h3 style="color: var(--primary-teal); margin-bottom: 1rem;">전도 (Conduction)</h3>
+                    <p style="font-size: 1rem;">입자의 직접 이동 없이, 이웃한 입자의 충돌을 통해 열 전달 (주로 고체)</p>
+                </div>
+                <div class="card state-card">
+                    <h3 style="color: var(--primary-teal); margin-bottom: 1rem;">대류 (Convection)</h3>
+                    <p style="font-size: 1rem;">가벼워진 입자가 위로, 찬 입자가 아래로 직접 이동하며 순환 (액체/기체)</p>
+                </div>
+                <div class="card state-card">
+                    <h3 style="color: var(--primary-teal); margin-bottom: 1rem;">복사 (Radiation)</h3>
+                    <p style="font-size: 1rem;">물질의 도움 없이 전자기파 형태로 열에너지가 직접 이동</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="slide">
+            <h2>물질마다 열을 받아들이는 방식이 다릅니다</h2>
+            <div style="display: flex; gap: 40px; margin-top: 1rem;">
+                <div class="card" style="flex: 1;" id="heat-exp-container">
+                    <h3 style="text-align: center;">비열 및 열팽창 실험</h3>
+                    <p style="text-align: center; font-size: 1rem;">가열 시 금속(비열 작음)은 온도 변화가 크고 팽창합니다.</p>
+                    <div class="thermo-container">
+                        <div style="text-align: center;" class="thermometer-wrap">
+                            <div class="thermometer"><div class="mercury"></div></div>
+                            <div class="material-box water-box">물 1kg<br>(비열 큼)</div>
+                        </div>
+                        <div style="text-align: center;" class="thermometer-wrap">
+                            <div class="thermometer"><div class="mercury"></div></div>
+                            <div class="material-box metal-box" id="metal-block">금속 1kg<br>(비열 작음)</div>
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-top: 2rem;">
+                        <button class="interactive-btn danger" onclick="document.getElementById('heat-exp-container').classList.add('heating')">🔥 가열하기</button>
+                        <button class="interactive-btn" style="background: #ccc; margin-left:10px;" onclick="document.getElementById('heat-exp-container').classList.remove('heating')">초기화</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="slide">
+            <h2>외부의 힘 없이 스스로 끊임없이 움직이는 입자들</h2>
+            <div class="state-grid">
+                <div class="card state-card">
+                    <h3 style="color: var(--primary-teal); margin-bottom: 1rem;">확산 (Diffusion)</h3>
+                    <p style="font-size: 1.1rem;">입자가 스스로 모든 방향으로 움직여 기체나 액체 속으로 퍼져 나가는 현상.</p>
+                </div>
+                <div class="card state-card">
+                    <h3 style="color: var(--primary-teal); margin-bottom: 1rem;">증발 (Evaporation)</h3>
+                    <p style="font-size: 1.1rem;">액체 표면의 입자가 스스로 인력을 끊고 기체로 날아가는 현상.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="slide">
+            <h2>온도와 입자 배열이 결정하는 <span class="highlight">물질의 세 가지 상태</span></h2>
+            <div class="state-grid">
+                <div class="card state-card">
+                    <h3>고체 (Solid)</h3>
+                    <div class="state-visual" id="solid-visual" style="display: grid; grid-template-columns: repeat(5, 22px); gap: 4px; padding: 40px; justify-content: center; align-content: center;"></div>
+                    <p style="margin-top: 1rem; font-size: 1rem;">제자리 진동 운동<br>매우 규칙적</p>
+                </div>
+                <div class="card state-card">
+                    <h3>액체 (Liquid)</h3>
+                    <div class="state-visual" id="liquid-visual"></div>
+                    <p style="margin-top: 1rem; font-size: 1rem;">비교적 활발함<br>불규칙함</p>
+                </div>
+                <div class="card state-card">
+                    <h3>기체 (Gas)</h3>
+                    <div class="state-visual" id="gas-visual"></div>
+                    <p style="margin-top: 1rem; font-size: 1rem;">매우 자유롭고 활발함<br>빈 공간 많음</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="slide">
+            <h2>에너지가 만드는 극적인 변신, <span class="highlight">상태 변화</span></h2>
+            <div class="card" style="text-align: center; padding: 4rem;">
+                <h3 style="color: var(--primary-teal);">고체 ↔ 액체 ↔ 기체</h3>
+                <p style="margin-top: 2rem;">상태가 변해도 총 질량은 불변, 오직 입자 사이의 거리와 배열만 변화합니다.</p>
+                <p class="energy">열에너지 흡수 (융해, 기화, 승화) / 열에너지 방출 (응고, 액화, 승화)</p>
+            </div>
+        </div>
+
+        <div class="slide">
+            <h2>온도가 멈추는 순간, 숨겨진 결합이 끊어집니다 <span class="energy">(가열 곡선)</span></h2>
+            <div class="chart-box">
+                <svg width="100%" height="100%" viewBox="0 0 600 300">
+                    <polyline class="curve-line heat-curve" points="50,250 200,150 400,150 550,50" />
+                    <text x="280" y="135" class="plateau-text">융해 (상태 변화 구간)</text>
+                    <line x1="50" y1="250" x2="50" y2="50" stroke="#ccc" stroke-width="2"/>
+                    <line x1="50" y1="250" x2="550" y2="250" stroke="#ccc" stroke-width="2"/>
+                    <text x="20" y="50" fill="#666">온도</text>
+                    <text x="520" y="270" fill="#666">시간</text>
+                </svg>
+            </div>
+            <p class="card" style="margin-top: 1rem; font-weight: bold;">
+                "열을 계속 가해도 온도가 변하지 않는 이유는 입자들이 서로 멀어지고 활발해지는 데에열에너지를 사용하기 위해 입자들이 열에너지를 흡수하기 때문입니다."
+            </p>
+        </div>
+
+        <div class="slide">
+            <h2>흩어졌던 입자들이 질서를 되찾으며 에너지를 뿜어냅니다 <span class="highlight">(냉각 곡선)</span></h2>
+            <div class="chart-box">
+                <svg width="100%" height="100%" viewBox="0 0 600 300">
+                    <polyline class="curve-line cool-curve" points="50,50 200,150 400,150 550,250" />
+                    <text x="280" y="135" class="plateau-text">응고 (상태 변화 구간)</text>
+                    <line x1="50" y1="250" x2="50" y2="50" stroke="#ccc" stroke-width="2"/>
+                    <line x1="50" y1="250" x2="550" y2="250" stroke="#ccc" stroke-width="2"/>
+                    <text x="20" y="50" fill="#666">온도</text>
+                    <text x="520" y="270" fill="#666">시간</text>
+                </svg>
+            </div>
+            <p class="card" style="margin-top: 1rem; font-weight: bold;">
+                "냉각 중에도 온도가 변하지 않는 이유는 입자들이 둔해지고 가까워지면서 필요 없어진 열에너지를 입자들이 방출하기 때문입니다."
+            </p>
+        </div>
+
+    </div>
+
+    <nav class="nav-bar">
+        <button class="nav-btn" id="prev-btn" onclick="prevSlide()" disabled>
+            <svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z"/></svg>
+        </button>
+        <div class="indicator"><span id="current-page">1</span>/12</div>
+        <button class="nav-btn" id="next-btn" onclick="nextAction()">
+            <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+        </button>
+    </nav>
+
+    <script>
+        // === 상태 관리 ===
+        let currentSlideIdx = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        
+        let slide3Step = 0;
+        const slide3TotalSteps = 5;
+
+        function updateNav() {
+            document.getElementById('current-page').innerText = currentSlideIdx + 1;
+            document.getElementById('prev-btn').disabled = (currentSlideIdx === 0);
+            document.getElementById('next-btn').disabled = (currentSlideIdx === totalSlides - 1);
+            
+            slides.forEach((slide, idx) => {
+                slide.classList.remove('active', 'prev-slide');
+                if (idx === currentSlideIdx) {
+                    slide.classList.add('active');
+                } else if (idx < currentSlideIdx) {
+                    slide.classList.add('prev-slide');
+                }
+            });
+        }
+
+        function nextAction() {
+            if (currentSlideIdx === 2 && slide3Step < slide3TotalSteps) {
+                slide3Step++;
+                const stepEl = document.getElementById(`step-${slide3Step}`);
+                if (stepEl) {
+                    stepEl.classList.add('visible');
+                    document.querySelectorAll('.step-box').forEach(b => b.classList.remove('active-step'));
+                    stepEl.classList.add('active-step');
+                }
+                return;
+            }
+
+            if (currentSlideIdx < totalSlides - 1) {
+                currentSlideIdx++;
+                updateNav();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlideIdx === 2 && slide3Step > 0) {
+                document.querySelectorAll('.step-box').forEach(b => {
+                    b.classList.remove('visible', 'active-step');
+                });
+                slide3Step = 0;
+            }
+
+            if (currentSlideIdx > 0) {
+                currentSlideIdx--;
+                updateNav();
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') nextAction();
+            if (e.key === 'ArrowLeft') prevSlide();
+        });
+
+        // === 입자 시뮬레이션 초기화 (수정 및 개선 구역) ===
+        function initParticles() {
+            // Slide 4: 온도별 입자 운동 기본형
+            const coldBox = document.getElementById('cold-particles');
+            const hotBox = document.getElementById('hot-particles');
+            
+            for(let i=0; i<15; i++) {
+                let cp = document.createElement('div');
+                cp.className = 'particle';
+                cp.style.left = Math.random() * 80 + 10 + '%';
+                cp.style.top = Math.random() * 80 + 10 + '%';
+                cp.style.transition = 'all 2s ease-in-out';
+                coldBox.appendChild(cp);
+
+                let hp = document.createElement('div');
+                hp.className = 'particle hot';
+                hp.style.left = Math.random() * 80 + 10 + '%';
+                hp.style.top = Math.random() * 80 + 10 + '%';
+                hp.style.transition = 'all 0.3s ease-in-out';
+                hotBox.appendChild(hp);
+            }
+
+            // Slide 5: 열평형 대상 입자 생성
+            const eqHot = document.getElementById('eq-hot');
+            const eqCold = document.getElementById('eq-cold');
+            for(let i=0; i<64; i++) {
+                let h = document.createElement('div'); h.className = 'eq-particle'; eqHot.appendChild(h);
+                let c = document.createElement('div'); c.className = 'eq-particle'; eqCold.appendChild(c);
+            }
+
+            // Slide 9: 고체 입자 그리드 생성
+            const solidVisual = document.getElementById('solid-visual');
+            for(let i=0; i<25; i++) {
+                let sp = document.createElement('div');
+                sp.className = 'particle';
+                sp.style.position = 'relative';
+                sp.style.animation = `vibrate ${0.3 + Math.random()*0.2}s infinite`;
+                solidVisual.appendChild(sp);
+            }
+
+            // Slide 9: 액체 입자 독립 생성 (추가)
+            const liquidVisual = document.getElementById('liquid-visual');
+            for(let i=0; i<18; i++) {
+                let lp = document.createElement('div');
+                lp.className = 'particle';
+                lp.style.left = Math.random() * 70 + 15 + '%';
+                lp.style.top = Math.random() * 40 + 45 + '%'; /* 하단에 결집되도록 배치 */
+                lp.style.transition = 'all 1.2s ease-in-out';
+                liquidVisual.appendChild(lp);
+            }
+
+            // Slide 9: 기체 입자 독립 생성 (추가)
+            const gasVisual = document.getElementById('gas-visual');
+            for(let i=0; i<6; i++) {
+                let gp = document.createElement('div');
+                gp.className = 'particle hot';
+                gp.style.left = Math.random() * 80 + 10 + '%';
+                gp.style.top = Math.random() * 80 + 10 + '%';
+                gp.style.transition = 'all 0.4s ease-in-out';
+                gasVisual.appendChild(gp);
+            }
+
+            // 루프 구동형 애니메이션 프레임 제어
+            setInterval(() => {
+                document.querySelectorAll('#cold-particles .particle').forEach(p => {
+                    let dx = (Math.random() - 0.5) * 20;
+                    let dy = (Math.random() - 0.5) * 20;
+                    p.style.transform = `translate(${dx}px, ${dy}px)`;
+                });
+                // 액체 입자 유동성 시뮬레이션 매핑
+                document.querySelectorAll('#liquid-visual .particle').forEach(p => {
+                    let dx = (Math.random() - 0.5) * 35;
+                    let dy = (Math.random() - 0.5) * 25;
+                    p.style.transform = `translate(${dx}px, ${dy}px)`;
+                });
+            }, 1500);
+
+            setInterval(() => {
+                document.querySelectorAll('#hot-particles .particle').forEach(p => {
+                    let dx = (Math.random() - 0.5) * 150;
+                    let dy = (Math.random() - 0.5) * 150;
+                    p.style.transform = `translate(${dx}px, ${dy}px)`;
+                });
+                // 기체 입자 자유 비행 시뮬레이션 매핑
+                document.querySelectorAll('#gas-visual .particle').forEach(p => {
+                    let dx = (Math.random() - 0.5) * 160;
+                    let dy = (Math.random() - 0.5) * 160;
+                    p.style.transform = `translate(${dx}px, ${dy}px)`;
+                });
+            }, 350);
+        }
+
+        function triggerEquilibrium() {
+            document.getElementById('eq-container').classList.add('merged');
+        }
+
+        window.onload = () => {
+            initParticles();
+            if(currentSlideIdx === 2 && slide3Step === 0) {
+                document.getElementById('step-1').classList.add('visible', 'active-step');
+                slide3Step = 1;
+            }
+        };
+
+    </script>
+</body>
+</html>
